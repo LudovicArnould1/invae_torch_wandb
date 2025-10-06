@@ -97,6 +97,10 @@ class TrainConfig:
     # Loss
     lambda_indep: float = 0.1
     
+    # Reproducibility
+    seed: int = 42
+    deterministic: bool = True
+    
     # Warmup schedule (embedded)
     warmup_schedule: WarmupSchedule = field(default_factory=lambda: WarmupSchedule(
         beta_start=0.4,

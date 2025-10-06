@@ -22,6 +22,10 @@ amp: true  # automatic mixed precision
 # Loss configuration
 lambda_indep: 0.1  # independence penalty weight
 
+# Reproducibility
+seed: 42
+deterministic: true  # use deterministic algorithms for full reproducibility
+
 # Beta warmup schedule
 warmup_schedule:
   beta_start: 0.4

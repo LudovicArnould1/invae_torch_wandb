@@ -19,6 +19,10 @@ from homework_scientalab.data import prepare_dataloaders
 from homework_scientalab.model import InVAE
 from homework_scientalab.muon_optimizer import get_muon_optimizer
 from homework_scientalab.trainer import InVAETrainer
+from homework_scientalab.reproducibility import (
+    set_seed,
+    log_environment_to_wandb,
+)
 
 # Training constants
 WANDB_LOG_FREQ = 100  # How often to log gradients to wandb
@@ -42,6 +46,10 @@ def train(
     Returns:
         Trained InVAE model
     """
+    # Set seeds for reproducibility
+    print(f"Setting random seed to {train_cfg.seed} (deterministic={train_cfg.deterministic})")
+    set_seed(train_cfg.seed, train_cfg.deterministic)
+    
     # Setup device
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -49,12 +57,15 @@ def train(
     
     # Initialize wandb
     if use_wandb:
-        wandb.init(
+        run = wandb.init(
             project=train_cfg.project,
             entity=train_cfg.entity,
             name=train_cfg.run_name,
             config={**asdict(train_cfg), **asdict(data_cfg)},
         )
+        
+        # Log comprehensive environment info
+        log_environment_to_wandb(run)
     
     # Prepare data
     train_loader, val_loader, dims = prepare_dataloaders(
@@ -83,14 +94,24 @@ def train(
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"\nModel initialized with {n_params:,} trainable parameters")
     
+    # Log model architecture to wandb
     if use_wandb:
+        wandb.config.update(
+            {f"model/{k}": v for k, v in asdict(model_cfg).items()},
+            allow_val_change=True,
+        )
+        wandb.config.update({"model/n_params": n_params}, allow_val_change=True)
         wandb.watch(model, log="gradients", log_freq=WANDB_LOG_FREQ)
     
     # Setup optimizer: Muon for 2D parameters, AdamW for others
     params_2d = [p for p in model.parameters() if p.ndim == 2 and p.requires_grad]
     params_other = [p for p in model.parameters() if p.ndim != 2 and p.requires_grad]
     
-    print(f"Parameters: {len(params_2d)} 2D matrices for Muon, {len(params_other)} others for AdamW")
+    n_params_2d = sum(p.numel() for p in params_2d)
+    n_params_other = sum(p.numel() for p in params_other)
+    
+    print(f"Parameters: {len(params_2d)} 2D matrices ({n_params_2d:,} params) for Muon, "
+          f"{len(params_other)} others ({n_params_other:,} params) for AdamW")
     
     optimizer = get_muon_optimizer(
         params_2d,
@@ -104,6 +125,17 @@ def train(
             params_other,
             lr=train_cfg.learning_rate,
             weight_decay=train_cfg.weight_decay,
+        )
+    
+    # Log optimizer info to wandb
+    if use_wandb:
+        wandb.config.update(
+            {
+                "optimizer/type": "Muon+AdamW",
+                "optimizer/muon_params": n_params_2d,
+                "optimizer/adamw_params": n_params_other,
+            },
+            allow_val_change=True,
         )
     
     # Setup trainer
