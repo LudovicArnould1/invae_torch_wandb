@@ -9,7 +9,7 @@ Core visualizations:
 """
 from __future__ import annotations
 from pathlib import Path
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict
 
 import numpy as np
 import torch
@@ -264,7 +264,7 @@ def visualize_train_val_split(
         plt.close()
         
         # Compute metrics
-        print(f"  Computing metrics...")
+        print("  Computing metrics...")
         raw_metrics = compute_batch_correction_metrics(
             adata_raw_sub, batch_key, celltype_key, representation="X_umap"
         )
@@ -486,7 +486,7 @@ def visualize_batch_correction(
     print("\nSaving latent representations...")
     adata_inv.write(output_path / "adata_invariant.h5ad")
     adata_spur.write(output_path / "adata_spurious.h5ad")
-    print(f"✓ Saved invariant and spurious AnnData objects")
+    print("✓ Saved invariant and spurious AnnData objects")
     
     # Train/val split visualization (if split column exists)
     if "split" in adata_raw.obs.columns:
@@ -514,7 +514,7 @@ def visualize_batch_correction(
     
     # Log visualizations to W&B
     if log_to_wandb:
-        from homework_scientalab.artifacts import log_visualization_artifact, log_metrics_table
+        from homework_scientalab.monitor_and_setup.artifacts import log_visualization_artifact, log_metrics_table
         import wandb
         
         print("\n" + "=" * 80)
@@ -552,7 +552,7 @@ def visualize_batch_correction(
         # Log metrics as W&B table
         if "split" in adata_raw.obs.columns:
             log_metrics_table(metrics_all, table_name="batch_correction_metrics")
-            print(f"✓ Logged metrics table to W&B")
+            print("✓ Logged metrics table to W&B")
         
         # Log images directly to W&B for visualization in UI
         for plot_file in existing_plots:

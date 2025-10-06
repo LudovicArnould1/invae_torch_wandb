@@ -11,12 +11,9 @@ import torch
 import wandb
 
 from homework_scientalab.config import (
-    DataConfig,
-    TrainConfig,
     load_data_config,
     load_train_config,
 )
-from homework_scientalab.train import train
 
 
 def sweep_train(
@@ -89,7 +86,6 @@ def sweep_train(
             set_seed,
             log_environment_to_wandb,
         )
-        from homework_scientalab.monitor_and_setup.artifacts import log_model_artifact
         from homework_scientalab.config import InVAEConfig
         from dataclasses import asdict
         

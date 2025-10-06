@@ -18,7 +18,7 @@ def test_data_preparation_stage():
     
     # Load config
     data_cfg = load_data_config()
-    print(f"\nData Config:")
+    print("\nData Config:")
     print(f"  Data path: {data_cfg.data_path}")
     print(f"  HVGs: {data_cfg.n_top_genes}")
     print(f"  Val size: {data_cfg.val_size}")

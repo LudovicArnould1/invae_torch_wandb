@@ -34,7 +34,7 @@ def visualize_raw_data(data_path: str = "data/pancreas.h5ad") -> None:
     adata = sc.read(data_path)
     
     print(f"Shape: {adata.shape[0]} cells × {adata.shape[1]} genes")
-    print(f"\nAvailable metadata:")
+    print("\nAvailable metadata:")
     print(f"  obs columns: {list(adata.obs.columns)}")
     print(f"  var columns: {list(adata.var.columns)}")
     
@@ -52,7 +52,7 @@ def visualize_raw_data(data_path: str = "data/pancreas.h5ad") -> None:
     print(f"\nSamples ({len(adata.obs['sample'].cat.categories)}):")
     print(adata.obs['sample'].value_counts())
     
-    print(f"\nQC metrics:")
+    print("\nQC metrics:")
     print(f"  Mean genes per cell: {adata.obs['n_genes'].mean():.1f}")
     print(f"  Median genes per cell: {adata.obs['n_genes'].median():.1f}")
     print(f"  Mean counts per cell: {adata.obs['n_counts'].mean():.1f}")

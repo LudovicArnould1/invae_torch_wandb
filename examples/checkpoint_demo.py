@@ -7,7 +7,6 @@ This demonstrates:
 3. Checkpoint cleanup (keeping best + last N)
 4. W&B artifact upload
 """
-from pathlib import Path
 from homework_scientalab.pipeline import run_pipeline
 
 # Example 1: Train from scratch with checkpointing

@@ -8,7 +8,6 @@ Provides utilities to:
 - Track artifact lineage (model → dataset → preprocessing)
 """
 from __future__ import annotations
-import json
 from pathlib import Path
 from typing import Dict, Any, Optional
 import logging

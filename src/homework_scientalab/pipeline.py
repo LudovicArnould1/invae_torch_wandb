@@ -14,7 +14,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional
 import logging
 
 import numpy as np
@@ -38,9 +38,8 @@ from homework_scientalab.monitor_and_setup.artifacts import (
     log_dataset_artifact,
     log_model_artifact,
     use_dataset_artifact,
-    use_model_artifact,
 )
-from homework_scientalab.checkpoint import CheckpointManager
+from homework_scientalab.monitor_and_setup.checkpoint import CheckpointManager
 
 logger = logging.getLogger(__name__)
 

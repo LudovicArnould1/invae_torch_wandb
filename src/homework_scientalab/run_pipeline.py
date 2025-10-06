@@ -146,20 +146,20 @@ def main():
     print("\n" + "=" * 80)
     print("PIPELINE CONFIGURATION")
     print("=" * 80)
-    print(f"\nData:")
+    print("\nData:")
     print(f"  Path: {data_cfg.data_path}")
     print(f"  HVGs: {data_cfg.n_top_genes}")
     print(f"  Val size: {data_cfg.val_size}")
-    print(f"\nTraining:")
+    print("\nTraining:")
     print(f"  Epochs: {train_cfg.n_epochs}")
     print(f"  Batch size: {train_cfg.batch_size}")
     print(f"  Learning rate: {train_cfg.learning_rate}")
     print(f"  Latent dims: z_i={train_cfg.z_i_dim}, z_s={train_cfg.z_s_dim}")
-    print(f"\nW&B:")
+    print("\nW&B:")
     print(f"  Project: {args.project}")
     print(f"  Entity: {args.entity or '(default)'}")
     print(f"  Run name: {args.run_name or '(auto-generated)'}")
-    print(f"\nStages:")
+    print("\nStages:")
     print(f"  Data prep: {'SKIP' if args.skip_data_prep else 'RUN'}")
     print(f"  Training: {'SKIP' if args.skip_training else 'RUN'}")
     print(f"  Evaluation: {'SKIP' if args.skip_evaluation else 'RUN'}")
@@ -213,7 +213,7 @@ def main():
     
     if "data_preparation" in outputs:
         data_out = outputs["data_preparation"]
-        print(f"\n✓ Data Preparation:")
+        print("\n✓ Data Preparation:")
         print(f"  Cells: {data_out.metadata.get('n_cells')}")
         print(f"  Genes: {data_out.metadata.get('n_genes')}")
         print(f"  Train/Val: {data_out.metadata.get('train_cells')}/{data_out.metadata.get('val_cells')}")
@@ -221,14 +221,14 @@ def main():
     
     if "training" in outputs:
         train_out = outputs["training"]
-        print(f"\n✓ Training:")
+        print("\n✓ Training:")
         print(f"  Best val loss: {train_out.metadata.get('best_val_loss'):.2f}")
         print(f"  Epochs: {train_out.metadata.get('n_epochs')}")
         print(f"  Model saved to: {train_out.local_paths.get('model')}")
     
     if "evaluation" in outputs:
         eval_out = outputs["evaluation"]
-        print(f"\n✓ Evaluation:")
+        print("\n✓ Evaluation:")
         print(f"  Val loss: {eval_out.metadata.get('val_loss'):.2f}")
         print(f"  Val cells: {eval_out.metadata.get('n_val_cells')}")
     

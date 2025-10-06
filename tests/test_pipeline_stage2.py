@@ -4,7 +4,7 @@ Test script for Stage 2: Model Training.
 This script tests the TrainingStage using the output from DataPreparationStage.
 """
 from homework_scientalab.config import load_train_config
-from homework_scientalab.pipeline import DataPreparationStage, TrainingStage, StageOutput
+from homework_scientalab.pipeline import TrainingStage, StageOutput
 from pathlib import Path
 import wandb
 import torch
@@ -40,7 +40,7 @@ def test_training_stage():
     
     # Load training config with reduced epochs for testing
     train_cfg = load_train_config()
-    print(f"\nTraining Config:")
+    print("\nTraining Config:")
     print(f"  Epochs: {train_cfg.n_epochs} (using for test)")
     print(f"  Batch size: {train_cfg.batch_size}")
     print(f"  Learning rate: {train_cfg.learning_rate}")

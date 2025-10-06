@@ -2,7 +2,7 @@
 Data preparation and dataset utilities for inVAE training on single-cell RNA-seq data.
 """
 from __future__ import annotations
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -154,7 +154,7 @@ def load_and_preprocess_data(
     
     # Save processed data if requested
     if save_path is not None:
-        print(f"\n=== Saving Processed Data ===")
+        print("\n=== Saving Processed Data ===")
         print(f"Saving to: {save_path}")
         adata.write(save_path)
         print(f"Successfully saved processed AnnData to {save_path}")
@@ -182,7 +182,7 @@ def compute_size_factors(
     upper_bound = np.percentile(library_size, clip_percentile)
     library_size = np.clip(library_size, min_clip, upper_bound)
     
-    print(f"\nLibrary size statistics:")
+    print("\nLibrary size statistics:")
     print(f"  Min: {library_size.min():.1f}")
     print(f"  Median: {np.median(library_size):.1f}")
     print(f"  Max: {library_size.max():.1f}")
@@ -222,7 +222,7 @@ def prepare_covariates(
     n_celltypes = len(celltype_encoder.classes_)
     celltype_onehot = np.eye(n_celltypes)[celltype_labels]
     
-    print(f"\nCovariate dimensions:")
+    print("\nCovariate dimensions:")
     print(f"  Batches: {n_batches} ({batch_encoder.classes_})")
     print(f"  Cell types: {n_celltypes} ({celltype_encoder.classes_})")
     
@@ -264,16 +264,16 @@ def stratified_train_val_split(
         random_state=random_state,
     )
     
-    print(f"\n=== Train/Val Split ===")
+    print("\n=== Train/Val Split ===")
     print(f"Train: {len(train_idx)} cells ({len(train_idx)/len(adata)*100:.1f}%)")
     print(f"Val:   {len(val_idx)} cells ({len(val_idx)/len(adata)*100:.1f}%)")
     
     # Verify stratification
-    print(f"\nTrain set distribution:")
+    print("\nTrain set distribution:")
     print(f"  Batches:\n{adata.obs.iloc[train_idx][batch_key].value_counts()}")
     print(f"  Cell types:\n{adata.obs.iloc[train_idx][celltype_key].value_counts()}")
     
-    print(f"\nVal set distribution:")
+    print("\nVal set distribution:")
     print(f"  Batches:\n{adata.obs.iloc[val_idx][batch_key].value_counts()}")
     print(f"  Cell types:\n{adata.obs.iloc[val_idx][celltype_key].value_counts()}")
     
@@ -337,7 +337,7 @@ def prepare_dataloaders(
     # Add split labels to adata for later visualization
     adata.obs["split"] = "train"
     adata.obs.iloc[val_idx, adata.obs.columns.get_loc("split")] = "val"
-    print(f"\nAdded 'split' column to adata.obs:")
+    print("\nAdded 'split' column to adata.obs:")
     print(f"  Train: {(adata.obs['split'] == 'train').sum()} cells")
     print(f"  Val: {(adata.obs['split'] == 'val').sum()} cells")
     
@@ -345,7 +345,7 @@ def prepare_dataloaders(
     processed_path = None
     if save_processed:
         processed_path = "data/pancreas_processed.h5ad"
-        print(f"\n=== Saving Processed Data ===")
+        print("\n=== Saving Processed Data ===")
         print(f"Saving to: {processed_path}")
         adata.write(processed_path)
         print(f"Successfully saved processed AnnData with split info to {processed_path}")
@@ -355,7 +355,7 @@ def prepare_dataloaders(
         from homework_scientalab.monitor_and_setup.artifacts import log_dataset_artifact
         from pathlib import Path
         
-        print(f"\n=== Logging Data Artifacts to W&B ===")
+        print("\n=== Logging Data Artifacts to W&B ===")
         
         # Log raw data (if exists)
         if Path(cfg.data_path).exists():
@@ -394,7 +394,7 @@ def prepare_dataloaders(
                 metadata=processed_metadata,
             )
         
-        print(f"✓ Data artifacts logged to W&B")
+        print("✓ Data artifacts logged to W&B")
     
     # 6. Create datasets
     train_dataset = SingleCellDataset(
@@ -440,11 +440,11 @@ def prepare_dataloaders(
     print("\n" + "=" * 80)
     print("DATA PREPARATION COMPLETE")
     print("=" * 80)
-    print(f"Dimensions:")
+    print("Dimensions:")
     print(f"  Genes (x_dim): {dims['x_dim']}")
     print(f"  Cell types (b_dim): {dims['b_dim']}")
     print(f"  Batches (t_dim): {dims['t_dim']}")
-    print(f"\nDataLoaders:")
+    print("\nDataLoaders:")
     print(f"  Train batches: {len(train_loader)}")
     print(f"  Val batches: {len(val_loader)}")
     print(f"  Batch size: {batch_size}")

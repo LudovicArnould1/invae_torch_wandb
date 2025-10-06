@@ -89,7 +89,7 @@ def test_config_override():
     train_cfg.lambda_indep = 0.05
     train_cfg.warmup_schedule.warmup_steps = 500
     
-    print(f"\n  After override:")
+    print("\n  After override:")
     print(f"  z_i_dim: {train_cfg.z_i_dim}")
     print(f"  z_s_dim: {train_cfg.z_s_dim}")
     print(f"  learning_rate: {train_cfg.learning_rate}")

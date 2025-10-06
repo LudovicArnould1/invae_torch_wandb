@@ -97,7 +97,7 @@ def run_sweep_agent(
     print("=" * 80 + "\n")
     
     # Import the sweep training function
-    from sweep_train import sweep_train
+    from homework_scientalab.sweep.sweep_train import sweep_train
     
     # Construct full sweep ID if needed
     if "/" not in sweep_id:
@@ -182,7 +182,7 @@ def main():
     else:
         print("\nSweep initialized. To run the agent, use:")
         print(f"  wandb agent {sweep_id}")
-        print(f"  OR")
+        print("  OR")
         print(f"  python run_sweep.py --sweep-id {sweep_id} --count {args.count}")
 
 

@@ -5,14 +5,13 @@ import json
 import random
 import tempfile
 from pathlib import Path
-from typing import Dict, Any
 
 import numpy as np
 import pytest
 import torch
 import torch.nn as nn
 
-from homework_scientalab.checkpoint import CheckpointManager, CheckpointState
+from homework_scientalab.checkpoint import CheckpointManager
 
 
 class SimpleModel(nn.Module):

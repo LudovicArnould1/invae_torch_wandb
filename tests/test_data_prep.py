@@ -31,7 +31,7 @@ if __name__ == "__main__":
     print("=" * 80)
     
     batch = next(iter(train_loader))
-    print(f"Batch contents:")
+    print("Batch contents:")
     for key, val in batch.items():
         print(f"  {key}: shape={val.shape}, dtype={val.dtype}")
         if key == "x":
@@ -40,6 +40,6 @@ if __name__ == "__main__":
             print(f"    Size factors - min={val.min():.3f}, max={val.max():.3f}, mean={val.mean():.3f}")
     
     print("\n✓ Data preparation successful!")
-    print(f"\nReady for model initialization with:")
+    print("\nReady for model initialization with:")
     print(f"  x_dim={dims['x_dim']}, b_dim={dims['b_dim']}, t_dim={dims['t_dim']}")
 

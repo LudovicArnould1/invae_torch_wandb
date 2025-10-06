@@ -5,11 +5,10 @@ from __future__ import annotations
 
 import logging
 import math
-from dataclasses import dataclass
-from typing import Iterable, List, Optional, Sequence, Tuple
+from typing import Iterable, Optional, Tuple
 
 import torch
-from torch import Tensor, nn
+from torch import Tensor
 
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")

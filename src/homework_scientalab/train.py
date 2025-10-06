@@ -310,12 +310,12 @@ def main(
     data_cfg = load_data_config(yaml_path=data_config_path)
     train_cfg = load_train_config(yaml_path=train_config_path)
     
-    print(f"\nData Config:")
+    print("\nData Config:")
     print(f"  Data path: {data_cfg.data_path}")
     print(f"  HVGs: {data_cfg.n_top_genes}")
     print(f"  Val size: {data_cfg.val_size}")
     
-    print(f"\nTraining Config:")
+    print("\nTraining Config:")
     print(f"  Epochs: {train_cfg.n_epochs}")
     print(f"  Batch size: {train_cfg.batch_size}")
     print(f"  Learning rate: {train_cfg.learning_rate}")

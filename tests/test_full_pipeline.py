@@ -20,7 +20,7 @@ def test_full_pipeline():
     train_cfg.n_epochs = 3
     train_cfg.save_every = 1
     
-    print(f"\nPipeline Configuration:")
+    print("\nPipeline Configuration:")
     print(f"  Data: {data_cfg.n_top_genes} HVGs, val_size={data_cfg.val_size}")
     print(f"  Training: {train_cfg.n_epochs} epochs, batch_size={train_cfg.batch_size}")
     print(f"  Latent dims: z_i={train_cfg.z_i_dim}, z_s={train_cfg.z_s_dim}")
@@ -53,7 +53,7 @@ def test_full_pipeline():
     
     if "data_preparation" in outputs:
         data_out = outputs["data_preparation"]
-        print(f"\n✓ Data Preparation:")
+        print("\n✓ Data Preparation:")
         print(f"  - Cells: {data_out.metadata.get('n_cells')}")
         print(f"  - Genes: {data_out.metadata.get('n_genes')}")
         print(f"  - Train/Val: {data_out.metadata.get('train_cells')}/{data_out.metadata.get('val_cells')}")
@@ -61,14 +61,14 @@ def test_full_pipeline():
     
     if "training" in outputs:
         train_out = outputs["training"]
-        print(f"\n✓ Training:")
+        print("\n✓ Training:")
         print(f"  - Best val loss: {train_out.metadata.get('best_val_loss'):.2f}")
         print(f"  - Epochs: {train_out.metadata.get('n_epochs')}")
         print(f"  - Local path: {train_out.local_paths.get('model')}")
     
     if "evaluation" in outputs:
         eval_out = outputs["evaluation"]
-        print(f"\n✓ Evaluation:")
+        print("\n✓ Evaluation:")
         print(f"  - Val loss: {eval_out.metadata.get('val_loss'):.2f}")
         print(f"  - Val cells: {eval_out.metadata.get('n_val_cells')}")
     
