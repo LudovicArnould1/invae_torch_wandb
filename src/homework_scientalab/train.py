@@ -19,10 +19,11 @@ from homework_scientalab.data import prepare_dataloaders
 from homework_scientalab.model import InVAE
 from homework_scientalab.muon_optimizer import get_muon_optimizer
 from homework_scientalab.trainer import InVAETrainer
-from homework_scientalab.reproducibility import (
+from homework_scientalab.monitor_and_setup.reproducibility import (
     set_seed,
     log_environment_to_wandb,
 )
+from homework_scientalab.monitor_and_setup.artifacts import log_model_artifact
 
 # Training constants
 WANDB_LOG_FREQ = 100  # How often to log gradients to wandb
@@ -73,6 +74,7 @@ def train(
         batch_size=train_cfg.batch_size,
         num_workers=train_cfg.num_workers,
         pin_memory=train_cfg.pin_memory,
+        log_artifacts=use_wandb,  # Log data artifacts if using W&B
     )
     
     # Build model
@@ -220,6 +222,23 @@ def train(
             if use_wandb:
                 wandb.run.summary["best_val_loss"] = best_val_loss
                 wandb.run.summary["best_epoch"] = epoch
+                
+                # Log best model as W&B artifact
+                log_model_artifact(
+                    str(checkpoint_path),
+                    artifact_name="invae_model",
+                    model_config=asdict(model_cfg),
+                    metrics={
+                        "val_loss": float(best_val_loss),
+                        "epoch": epoch,
+                        "train_loss": train_metrics["loss"],
+                        "val_recon_loss": val_metrics["recon"],
+                        "val_kl_i": val_metrics["kl_i"],
+                        "val_kl_s": val_metrics["kl_s"],
+                    },
+                    description=f"Best model at epoch {epoch} with val_loss={best_val_loss:.2f}",
+                    aliases=["best", "latest"],
+                )
         
         # Periodic checkpoint
         if epoch % train_cfg.save_every == 0:
@@ -234,6 +253,20 @@ def train(
                 },
                 checkpoint_path,
             )
+            
+            # Log periodic checkpoint as W&B artifact
+            if use_wandb:
+                log_model_artifact(
+                    str(checkpoint_path),
+                    artifact_name="invae_model_checkpoints",
+                    model_config=asdict(model_cfg),
+                    metrics={
+                        "val_loss": float(val_metrics["loss"]),
+                        "epoch": epoch,
+                    },
+                    description=f"Checkpoint at epoch {epoch}",
+                    aliases=[f"epoch_{epoch}"],
+                )
     
     print("\n" + "=" * 80)
     print(f"Training complete! Best validation loss: {best_val_loss:.2f}")

@@ -8,7 +8,7 @@ Main components:
 - train: Training pipeline with W&B integration
 - reproducibility: Seed setting and environment tracking
 """
-from homework_scientalab.reproducibility import set_seed, get_environment_info
+from homework_scientalab.monitor_and_setup.reproducibility import set_seed, get_environment_info
 
 __version__ = "0.1.0"
 

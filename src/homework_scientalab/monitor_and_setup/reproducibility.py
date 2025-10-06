@@ -8,12 +8,10 @@ Provides functions to:
 - Log comprehensive metadata to W&B
 """
 from __future__ import annotations
-import os
 import random
-import subprocess
 import platform
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import logging
 
 import numpy as np

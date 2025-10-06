@@ -2,7 +2,7 @@
 Data preparation and dataset utilities for inVAE training on single-cell RNA-seq data.
 """
 from __future__ import annotations
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -286,6 +286,7 @@ def prepare_dataloaders(
     num_workers: int = 4,
     pin_memory: bool = True,
     save_processed: bool = True,
+    log_artifacts: bool = False,
 ) -> Tuple[DataLoader, DataLoader, Dict[str, int]]:
     """
     Complete data preparation pipeline.
@@ -296,6 +297,7 @@ def prepare_dataloaders(
         num_workers: Number of workers for data loading
         pin_memory: Pin memory for faster GPU transfer
         save_processed: If True, saves processed data as pancreas_processed.h5ad
+        log_artifacts: If True, logs raw and processed data as W&B artifacts
         
     Returns:
         train_loader: Training dataloader
@@ -340,12 +342,59 @@ def prepare_dataloaders(
     print(f"  Val: {(adata.obs['split'] == 'val').sum()} cells")
     
     # Save processed data with split info
+    processed_path = None
     if save_processed:
-        save_path = "data/pancreas_processed.h5ad"
+        processed_path = "data/pancreas_processed.h5ad"
         print(f"\n=== Saving Processed Data ===")
-        print(f"Saving to: {save_path}")
-        adata.write(save_path)
-        print(f"Successfully saved processed AnnData with split info to {save_path}")
+        print(f"Saving to: {processed_path}")
+        adata.write(processed_path)
+        print(f"Successfully saved processed AnnData with split info to {processed_path}")
+    
+    # Log data artifacts to W&B
+    if log_artifacts:
+        from homework_scientalab.monitor_and_setup.artifacts import log_dataset_artifact
+        from pathlib import Path
+        
+        print(f"\n=== Logging Data Artifacts to W&B ===")
+        
+        # Log raw data (if exists)
+        if Path(cfg.data_path).exists():
+            raw_metadata = {
+                "source": cfg.data_path,
+                "backup_url": cfg.backup_url,
+            }
+            log_dataset_artifact(
+                cfg.data_path,
+                artifact_name="pancreas_raw",
+                description="Raw pancreas scRNA-seq data",
+                metadata=raw_metadata,
+            )
+        
+        # Log processed data
+        if processed_path and Path(processed_path).exists():
+            processed_metadata = {
+                "n_cells": adata.n_obs,
+                "n_genes": adata.n_vars,
+                "n_batches": len(adata.obs[cfg.batch_key].cat.categories),
+                "n_celltypes": len(adata.obs[cfg.celltype_key].cat.categories),
+                "train_cells": (adata.obs["split"] == "train").sum(),
+                "val_cells": (adata.obs["split"] == "val").sum(),
+                "preprocessing": {
+                    "min_genes": cfg.min_genes,
+                    "min_cells": cfg.min_cells,
+                    "n_top_genes": cfg.n_top_genes,
+                    "val_size": cfg.val_size,
+                    "random_state": cfg.random_state,
+                },
+            }
+            log_dataset_artifact(
+                processed_path,
+                artifact_name="pancreas_processed",
+                description="Preprocessed pancreas data with HVG selection and train/val split",
+                metadata=processed_metadata,
+            )
+        
+        print(f"✓ Data artifacts logged to W&B")
     
     # 6. Create datasets
     train_dataset = SingleCellDataset(
