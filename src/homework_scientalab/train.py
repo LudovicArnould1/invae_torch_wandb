@@ -254,8 +254,8 @@ def train(
                 checkpoint_path,
             )
             
-            # Log periodic checkpoint as W&B artifact
-            if use_wandb:
+            # Log periodic checkpoint as W&B artifact (only every artifact_save_every epochs)
+            if use_wandb and epoch % train_cfg.artifact_save_every == 0:
                 log_model_artifact(
                     str(checkpoint_path),
                     artifact_name="invae_model_checkpoints",

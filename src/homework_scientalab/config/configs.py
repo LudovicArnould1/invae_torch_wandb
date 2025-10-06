@@ -120,4 +120,5 @@ class TrainConfig:
     project: str = "invae-pancreas"
     entity: Optional[str] = None
     run_name: Optional[str] = None
+    artifact_save_every: int = 50  # Save model artifacts to W&B every N epochs
 
