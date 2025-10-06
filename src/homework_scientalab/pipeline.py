@@ -40,6 +40,7 @@ from homework_scientalab.monitor_and_setup.artifacts import (
     use_dataset_artifact,
     use_model_artifact,
 )
+from homework_scientalab.checkpoint import CheckpointManager
 
 logger = logging.getLogger(__name__)
 
@@ -270,6 +271,7 @@ class TrainingStage(PipelineStage):
         train_cfg: TrainConfig,
         data_output: StageOutput,
         device: Optional[torch.device] = None,
+        resume_from_checkpoint: bool = False,
     ) -> StageOutput:
         """
         Execute training pipeline.
@@ -278,6 +280,7 @@ class TrainingStage(PipelineStage):
             train_cfg: Training configuration
             data_output: Output from DataPreparationStage
             device: Device to train on (defaults to cuda if available)
+            resume_from_checkpoint: Whether to resume from existing checkpoint
             
         Returns:
             StageOutput with trained model artifact
@@ -416,7 +419,43 @@ class TrainingStage(PipelineStage):
                 weight_decay=train_cfg.weight_decay,
             )
         
-        # 8. Setup trainer
+        # 8. Setup checkpoint manager
+        checkpoint_manager = CheckpointManager(
+            checkpoint_dir=train_cfg.save_dir,
+            keep_last_n=2,
+            wandb_run=self.wandb_run,
+        )
+        
+        # 9. Check for checkpoint resumption
+        start_epoch = 1
+        best_val_loss = float("inf")
+        
+        if resume_from_checkpoint and checkpoint_manager.has_checkpoint():
+            logger.info("Resuming from checkpoint...")
+            checkpoint_state = checkpoint_manager.load_checkpoint(device=device)
+            
+            if checkpoint_state:
+                # Restore model and optimizer states
+                model.load_state_dict(checkpoint_state.model_state_dict)
+                optimizer.load_state_dict(checkpoint_state.optimizer_state_dict)
+                
+                if optimizer_other and checkpoint_state.optimizer_other_state_dict:
+                    optimizer_other.load_state_dict(checkpoint_state.optimizer_other_state_dict)
+                
+                # Restore training progress
+                start_epoch = checkpoint_state.epoch + 1
+                best_val_loss = checkpoint_state.best_val_loss
+                
+                logger.info(
+                    f"Resumed from epoch {checkpoint_state.epoch}, "
+                    f"step {checkpoint_state.global_step}, "
+                    f"best_val_loss={best_val_loss:.4f}"
+                )
+        else:
+            if resume_from_checkpoint:
+                logger.info("No checkpoint found, starting from scratch")
+        
+        # 10. Setup trainer
         trainer = InVAETrainer(
             model=model,
             optimizer=optimizer,
@@ -428,15 +467,19 @@ class TrainingStage(PipelineStage):
             optimizer_other=optimizer_other,
         )
         
-        # 9. Training loop
+        # Restore global_step if resuming
+        if resume_from_checkpoint and checkpoint_manager.has_checkpoint():
+            checkpoint_state = checkpoint_manager.load_checkpoint(device=device)
+            if checkpoint_state:
+                trainer.global_step = checkpoint_state.global_step
+        
+        # 11. Training loop
         save_dir = Path(train_cfg.save_dir)
         save_dir.mkdir(parents=True, exist_ok=True)
-        
-        best_val_loss = float("inf")
         best_checkpoint_path = save_dir / "best_model.pt"
         
-        logger.info("Starting training...")
-        for epoch in range(1, train_cfg.n_epochs + 1):
+        logger.info(f"Starting training from epoch {start_epoch}...")
+        for epoch in range(start_epoch, train_cfg.n_epochs + 1):
             # Train
             train_metrics = trainer.train_epoch(train_loader)
             
@@ -470,19 +513,26 @@ class TrainingStage(PipelineStage):
                     step=trainer.global_step,
                 )
             
-            # Save best model
-            if val_metrics["loss"] < best_val_loss:
-                best_val_loss = val_metrics["loss"]
-                torch.save(
-                    {
-                        "epoch": epoch,
-                        "model_state_dict": model.state_dict(),
-                        "optimizer_state_dict": optimizer.state_dict(),
-                        "val_loss": best_val_loss,
-                        "model_config": asdict(model_cfg),
-                    },
-                    best_checkpoint_path,
+            # Save checkpoints
+            is_best = val_metrics["loss"] < best_val_loss
+            should_save = (epoch % train_cfg.save_every == 0) or is_best or (epoch == train_cfg.n_epochs)
+            
+            if should_save:
+                checkpoint_manager.save_checkpoint(
+                    epoch=epoch,
+                    global_step=trainer.global_step,
+                    model=model,
+                    optimizer=optimizer,
+                    val_loss=val_metrics["loss"],
+                    best_val_loss=best_val_loss,
+                    model_config=asdict(model_cfg),
+                    is_best=is_best,
+                    optimizer_other=optimizer_other,
                 )
+            
+            # Update best validation loss
+            if is_best:
+                best_val_loss = val_metrics["loss"]
                 
                 # Log to W&B
                 if self.wandb_run:
@@ -664,6 +714,7 @@ class Pipeline:
         run_training: bool = True,
         run_evaluation: bool = True,
         data_output: Optional[StageOutput] = None,
+        resume_from_checkpoint: bool = False,
     ) -> Dict[str, StageOutput]:
         """
         Run the full pipeline or specific stages.
@@ -676,16 +727,28 @@ class Pipeline:
             run_training: Whether to run training stage
             run_evaluation: Whether to run evaluation stage
             data_output: Pre-existing data output to skip data prep
+            resume_from_checkpoint: Whether to resume from existing checkpoint
             
         Returns:
             Dictionary mapping stage names to their outputs
         """
+        # Check for existing checkpoint and get run_id for resumption
+        wandb_run_id = None
+        if resume_from_checkpoint:
+            checkpoint_manager = CheckpointManager(checkpoint_dir=train_cfg.save_dir)
+            if checkpoint_manager.has_checkpoint():
+                wandb_run_id = checkpoint_manager.get_resume_run_id()
+                if wandb_run_id:
+                    logger.info(f"Resuming W&B run: {wandb_run_id}")
+        
         # Initialize W&B run (shared across all stages)
         self.wandb_run = wandb.init(
             project=self.project,
             entity=self.entity,
             name=self.run_name,
             config={**asdict(data_cfg), **asdict(train_cfg)},
+            resume="allow" if resume_from_checkpoint else None,
+            id=wandb_run_id if resume_from_checkpoint else None,
         )
         
         # Log environment
@@ -711,6 +774,7 @@ class Pipeline:
                     train_cfg=train_cfg,
                     data_output=data_output,
                     device=device,
+                    resume_from_checkpoint=resume_from_checkpoint,
                 )
                 outputs["training"] = training_output
             
@@ -736,6 +800,7 @@ def run_pipeline(
     data_config_path: Optional[str] = None,
     train_config_path: Optional[str] = None,
     use_wandb: bool = True,
+    resume_from_checkpoint: bool = False,
 ) -> Dict[str, StageOutput]:
     """
     Convenience function to run the full pipeline.
@@ -744,6 +809,7 @@ def run_pipeline(
         data_config_path: Path to data config YAML
         train_config_path: Path to train config YAML
         use_wandb: Whether to use W&B logging
+        resume_from_checkpoint: Whether to resume from existing checkpoint
         
     Returns:
         Dictionary of stage outputs
@@ -754,6 +820,9 @@ def run_pipeline(
         >>> # Access specific outputs
         >>> model_artifact = outputs["training"].artifacts["model"]
         >>> dataset_path = outputs["data_preparation"].local_paths["dataset"]
+        >>> 
+        >>> # Resume from checkpoint
+        >>> outputs = run_pipeline(resume_from_checkpoint=True)
     """
     from homework_scientalab.config import load_data_config, load_train_config
     
@@ -774,5 +843,6 @@ def run_pipeline(
     return pipeline.run(
         data_cfg=data_cfg,
         train_cfg=train_cfg,
+        resume_from_checkpoint=resume_from_checkpoint,
     )
 
