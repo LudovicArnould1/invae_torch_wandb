@@ -15,20 +15,6 @@ err()  { printf "[ERROR] %s\n" "$*" >&2; }
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$PROJECT_ROOT"
 
-# Check for uv, try to install if missing
-if ! command -v uv >/dev/null 2>&1; then
-  warn "uv not found. Attempting to install via official installer..."
-  # Non-interactive install to ~/.local/bin
-  if command -v curl >/dev/null 2>&1; then
-    curl -fsSL https://astral.sh/uv/install.sh | sh
-  elif command -v wget >/dev/null 2>&1; then
-    wget -qO- https://astral.sh/uv/install.sh | sh
-  else
-    err "Neither curl nor wget available to install uv. Install uv and re-run."; exit 1
-  fi
-  # Add common install locations to PATH for this session
-  export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
-fi
 
 if ! command -v uv >/dev/null 2>&1; then
   err "uv command still not found after install. Ensure it's on your PATH and re-run."; exit 1

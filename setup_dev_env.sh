@@ -14,26 +14,7 @@ cd "$PROJECT_ROOT"
 
 info "Bootstrapping development environment for project at: $PROJECT_ROOT"
 
-# Dependencies: curl or wget, python3, uv
-if ! command -v uv >/dev/null 2>&1; then
-  warn "uv not found. Attempting to install via official installer..."
-  if command -v curl >/dev/null 2>&1; then
-    curl -fsSL https://astral.sh/uv/install.sh | sh
-  elif command -v wget >/dev/null 2>&1; then
-    wget -qO- https://astral.sh/uv/install.sh | sh
-  else
-    err "Neither curl nor wget available to install uv. Install uv and re-run."; exit 1
-  fi
-  export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
-fi
 
-if ! command -v uv >/dev/null 2>&1; then
-  err "uv command still not found after install. Ensure it's on your PATH and re-run."; exit 1
-fi
-
-if ! command -v python3 >/dev/null 2>&1; then
-  err "python3 not found. Please install Python 3.9+ and re-run."; exit 1
-fi
 
 # Initialize project if needed
 if [ ! -f pyproject.toml ]; then
