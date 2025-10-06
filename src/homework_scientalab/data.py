@@ -154,7 +154,7 @@ def load_and_preprocess_data(
     
     # Save processed data if requested
     if save_path is not None:
-        print(f"\n=== Saving Processed Data ===")
+        print("\n=== Saving Processed Data ===")
         print(f"Saving to: {save_path}")
         adata.write(save_path)
         print(f"Successfully saved processed AnnData to {save_path}")
@@ -182,7 +182,7 @@ def compute_size_factors(
     upper_bound = np.percentile(library_size, clip_percentile)
     library_size = np.clip(library_size, min_clip, upper_bound)
     
-    print(f"\nLibrary size statistics:")
+    print("\nLibrary size statistics:")
     print(f"  Min: {library_size.min():.1f}")
     print(f"  Median: {np.median(library_size):.1f}")
     print(f"  Max: {library_size.max():.1f}")
@@ -222,7 +222,7 @@ def prepare_covariates(
     n_celltypes = len(celltype_encoder.classes_)
     celltype_onehot = np.eye(n_celltypes)[celltype_labels]
     
-    print(f"\nCovariate dimensions:")
+    print("\nCovariate dimensions:")
     print(f"  Batches: {n_batches} ({batch_encoder.classes_})")
     print(f"  Cell types: {n_celltypes} ({celltype_encoder.classes_})")
     
@@ -264,16 +264,16 @@ def stratified_train_val_split(
         random_state=random_state,
     )
     
-    print(f"\n=== Train/Val Split ===")
+    print("\n=== Train/Val Split ===")
     print(f"Train: {len(train_idx)} cells ({len(train_idx)/len(adata)*100:.1f}%)")
     print(f"Val:   {len(val_idx)} cells ({len(val_idx)/len(adata)*100:.1f}%)")
     
     # Verify stratification
-    print(f"\nTrain set distribution:")
+    print("\nTrain set distribution:")
     print(f"  Batches:\n{adata.obs.iloc[train_idx][batch_key].value_counts()}")
     print(f"  Cell types:\n{adata.obs.iloc[train_idx][celltype_key].value_counts()}")
     
-    print(f"\nVal set distribution:")
+    print("\nVal set distribution:")
     print(f"  Batches:\n{adata.obs.iloc[val_idx][batch_key].value_counts()}")
     print(f"  Cell types:\n{adata.obs.iloc[val_idx][celltype_key].value_counts()}")
     
@@ -286,6 +286,7 @@ def prepare_dataloaders(
     num_workers: int = 4,
     pin_memory: bool = True,
     save_processed: bool = True,
+    log_artifacts: bool = False,
 ) -> Tuple[DataLoader, DataLoader, Dict[str, int]]:
     """
     Complete data preparation pipeline.
@@ -296,6 +297,7 @@ def prepare_dataloaders(
         num_workers: Number of workers for data loading
         pin_memory: Pin memory for faster GPU transfer
         save_processed: If True, saves processed data as pancreas_processed.h5ad
+        log_artifacts: If True, logs raw and processed data as W&B artifacts
         
     Returns:
         train_loader: Training dataloader
@@ -335,17 +337,64 @@ def prepare_dataloaders(
     # Add split labels to adata for later visualization
     adata.obs["split"] = "train"
     adata.obs.iloc[val_idx, adata.obs.columns.get_loc("split")] = "val"
-    print(f"\nAdded 'split' column to adata.obs:")
+    print("\nAdded 'split' column to adata.obs:")
     print(f"  Train: {(adata.obs['split'] == 'train').sum()} cells")
     print(f"  Val: {(adata.obs['split'] == 'val').sum()} cells")
     
     # Save processed data with split info
+    processed_path = None
     if save_processed:
-        save_path = "data/pancreas_processed.h5ad"
-        print(f"\n=== Saving Processed Data ===")
-        print(f"Saving to: {save_path}")
-        adata.write(save_path)
-        print(f"Successfully saved processed AnnData with split info to {save_path}")
+        processed_path = "data/pancreas_processed.h5ad"
+        print("\n=== Saving Processed Data ===")
+        print(f"Saving to: {processed_path}")
+        adata.write(processed_path)
+        print(f"Successfully saved processed AnnData with split info to {processed_path}")
+    
+    # Log data artifacts to W&B
+    if log_artifacts:
+        from homework_scientalab.monitor_and_setup.artifacts import log_dataset_artifact
+        from pathlib import Path
+        
+        print("\n=== Logging Data Artifacts to W&B ===")
+        
+        # Log raw data (if exists)
+        if Path(cfg.data_path).exists():
+            raw_metadata = {
+                "source": cfg.data_path,
+                "backup_url": cfg.backup_url,
+            }
+            log_dataset_artifact(
+                cfg.data_path,
+                artifact_name="pancreas_raw",
+                description="Raw pancreas scRNA-seq data",
+                metadata=raw_metadata,
+            )
+        
+        # Log processed data
+        if processed_path and Path(processed_path).exists():
+            processed_metadata = {
+                "n_cells": adata.n_obs,
+                "n_genes": adata.n_vars,
+                "n_batches": len(adata.obs[cfg.batch_key].cat.categories),
+                "n_celltypes": len(adata.obs[cfg.celltype_key].cat.categories),
+                "train_cells": (adata.obs["split"] == "train").sum(),
+                "val_cells": (adata.obs["split"] == "val").sum(),
+                "preprocessing": {
+                    "min_genes": cfg.min_genes,
+                    "min_cells": cfg.min_cells,
+                    "n_top_genes": cfg.n_top_genes,
+                    "val_size": cfg.val_size,
+                    "random_state": cfg.random_state,
+                },
+            }
+            log_dataset_artifact(
+                processed_path,
+                artifact_name="pancreas_processed",
+                description="Preprocessed pancreas data with HVG selection and train/val split",
+                metadata=processed_metadata,
+            )
+        
+        print("✓ Data artifacts logged to W&B")
     
     # 6. Create datasets
     train_dataset = SingleCellDataset(
@@ -391,11 +440,11 @@ def prepare_dataloaders(
     print("\n" + "=" * 80)
     print("DATA PREPARATION COMPLETE")
     print("=" * 80)
-    print(f"Dimensions:")
+    print("Dimensions:")
     print(f"  Genes (x_dim): {dims['x_dim']}")
     print(f"  Cell types (b_dim): {dims['b_dim']}")
     print(f"  Batches (t_dim): {dims['t_dim']}")
-    print(f"\nDataLoaders:")
+    print("\nDataLoaders:")
     print(f"  Train batches: {len(train_loader)}")
     print(f"  Val batches: {len(val_loader)}")
     print(f"  Batch size: {batch_size}")

@@ -9,7 +9,7 @@ Core visualizations:
 """
 from __future__ import annotations
 from pathlib import Path
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict
 
 import numpy as np
 import torch
@@ -264,7 +264,7 @@ def visualize_train_val_split(
         plt.close()
         
         # Compute metrics
-        print(f"  Computing metrics...")
+        print("  Computing metrics...")
         raw_metrics = compute_batch_correction_metrics(
             adata_raw_sub, batch_key, celltype_key, representation="X_umap"
         )
@@ -375,6 +375,7 @@ def visualize_batch_correction(
     output_dir: str = "validation_results/latent_vis",
     batch_key: str = "batch",
     celltype_key: str = "celltype",
+    log_to_wandb: bool = False,
     ) -> None:
     """
     Create comprehensive visualization of batch correction.
@@ -386,7 +387,7 @@ def visualize_batch_correction(
         output_dir: Directory to save plots
         batch_key: Batch covariate key
         celltype_key: Cell type covariate key
-        use_rapids: Use rapids-singlecell for fast UMAP
+        log_to_wandb: If True, log plots and metrics as W&B artifacts
     """
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -485,7 +486,7 @@ def visualize_batch_correction(
     print("\nSaving latent representations...")
     adata_inv.write(output_path / "adata_invariant.h5ad")
     adata_spur.write(output_path / "adata_spurious.h5ad")
-    print(f"✓ Saved invariant and spurious AnnData objects")
+    print("✓ Saved invariant and spurious AnnData objects")
     
     # Train/val split visualization (if split column exists)
     if "split" in adata_raw.obs.columns:
@@ -510,6 +511,58 @@ def visualize_batch_correction(
         save_metrics_report(metrics_all, output_path / "metrics_report.md", model_info)
     else:
         print("\nNote: No 'split' column found in data. Skipping train/val analysis.")
+    
+    # Log visualizations to W&B
+    if log_to_wandb:
+        from homework_scientalab.monitor_and_setup.artifacts import log_visualization_artifact, log_metrics_table
+        import wandb
+        
+        print("\n" + "=" * 80)
+        print("LOGGING TO WANDB")
+        print("=" * 80)
+        
+        # Collect all plot files
+        plot_files = [
+            output_path / "latent_comparison.png",
+            output_path / "batch_correction_comparison.png",
+        ]
+        
+        # Add train/val plots if they exist
+        if "split" in adata_raw.obs.columns:
+            for split in ["train", "val"]:
+                for plot_type in ["raw_batch", "raw_celltype", "invariant_batch", "invariant_celltype"]:
+                    plot_file = output_path / f"{split}_{plot_type}.png"
+                    if plot_file.exists():
+                        plot_files.append(plot_file)
+        
+        # Log visualization artifact
+        existing_plots = [str(p) for p in plot_files if p.exists()]
+        if existing_plots:
+            log_visualization_artifact(
+                existing_plots,
+                artifact_name="batch_correction_plots",
+                description="UMAP visualizations showing batch correction quality",
+                metadata={
+                    "model_path": model_path,
+                    "n_plots": len(existing_plots),
+                },
+            )
+            print(f"✓ Logged {len(existing_plots)} plots to W&B")
+        
+        # Log metrics as W&B table
+        if "split" in adata_raw.obs.columns:
+            log_metrics_table(metrics_all, table_name="batch_correction_metrics")
+            print("✓ Logged metrics table to W&B")
+        
+        # Log images directly to W&B for visualization in UI
+        for plot_file in existing_plots:
+            plot_name = Path(plot_file).stem
+            try:
+                wandb.log({f"visualization/{plot_name}": wandb.Image(plot_file)})
+            except Exception:
+                pass
+        
+        print("=" * 80)
     
     print("\n" + "=" * 80)
     print("VISUALIZATION COMPLETE")

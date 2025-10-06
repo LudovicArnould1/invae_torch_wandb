@@ -12,7 +12,7 @@ batchnorm: true
 use_library_size: true
 
 # Training hyperparameters
-n_epochs: 500
+n_epochs: 50
 batch_size: 256
 learning_rate: 0.001  # 1e-3
 weight_decay: 0.000001  # 1e-6
@@ -21,6 +21,10 @@ amp: true  # automatic mixed precision
 
 # Loss configuration
 lambda_indep: 0.1  # independence penalty weight
+
+# Reproducibility
+seed: 42
+deterministic: true  # use deterministic algorithms for full reproducibility
 
 # Beta warmup schedule
 warmup_schedule:
@@ -40,4 +44,4 @@ save_every: 50
 project: "invae-pancreas"
 entity: null  # your W&B username or team
 run_name: null  # optional custom run name
-
+artifact_save_every: 50  # save model artifacts to W&B every N epochs

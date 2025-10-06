@@ -19,6 +19,11 @@ from homework_scientalab.data import prepare_dataloaders
 from homework_scientalab.model import InVAE
 from homework_scientalab.muon_optimizer import get_muon_optimizer
 from homework_scientalab.trainer import InVAETrainer
+from homework_scientalab.monitor_and_setup.reproducibility import (
+    set_seed,
+    log_environment_to_wandb,
+)
+from homework_scientalab.monitor_and_setup.artifacts import log_model_artifact
 
 # Training constants
 WANDB_LOG_FREQ = 100  # How often to log gradients to wandb
@@ -42,6 +47,10 @@ def train(
     Returns:
         Trained InVAE model
     """
+    # Set seeds for reproducibility
+    print(f"Setting random seed to {train_cfg.seed} (deterministic={train_cfg.deterministic})")
+    set_seed(train_cfg.seed, train_cfg.deterministic)
+    
     # Setup device
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -49,12 +58,15 @@ def train(
     
     # Initialize wandb
     if use_wandb:
-        wandb.init(
+        run = wandb.init(
             project=train_cfg.project,
             entity=train_cfg.entity,
             name=train_cfg.run_name,
             config={**asdict(train_cfg), **asdict(data_cfg)},
         )
+        
+        # Log comprehensive environment info
+        log_environment_to_wandb(run)
     
     # Prepare data
     train_loader, val_loader, dims = prepare_dataloaders(
@@ -62,6 +74,7 @@ def train(
         batch_size=train_cfg.batch_size,
         num_workers=train_cfg.num_workers,
         pin_memory=train_cfg.pin_memory,
+        log_artifacts=use_wandb,  # Log data artifacts if using W&B
     )
     
     # Build model
@@ -83,14 +96,24 @@ def train(
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"\nModel initialized with {n_params:,} trainable parameters")
     
+    # Log model architecture to wandb
     if use_wandb:
+        wandb.config.update(
+            {f"model/{k}": v for k, v in asdict(model_cfg).items()},
+            allow_val_change=True,
+        )
+        wandb.config.update({"model/n_params": n_params}, allow_val_change=True)
         wandb.watch(model, log="gradients", log_freq=WANDB_LOG_FREQ)
     
     # Setup optimizer: Muon for 2D parameters, AdamW for others
     params_2d = [p for p in model.parameters() if p.ndim == 2 and p.requires_grad]
     params_other = [p for p in model.parameters() if p.ndim != 2 and p.requires_grad]
     
-    print(f"Parameters: {len(params_2d)} 2D matrices for Muon, {len(params_other)} others for AdamW")
+    n_params_2d = sum(p.numel() for p in params_2d)
+    n_params_other = sum(p.numel() for p in params_other)
+    
+    print(f"Parameters: {len(params_2d)} 2D matrices ({n_params_2d:,} params) for Muon, "
+          f"{len(params_other)} others ({n_params_other:,} params) for AdamW")
     
     optimizer = get_muon_optimizer(
         params_2d,
@@ -104,6 +127,17 @@ def train(
             params_other,
             lr=train_cfg.learning_rate,
             weight_decay=train_cfg.weight_decay,
+        )
+    
+    # Log optimizer info to wandb
+    if use_wandb:
+        wandb.config.update(
+            {
+                "optimizer/type": "Muon+AdamW",
+                "optimizer/muon_params": n_params_2d,
+                "optimizer/adamw_params": n_params_other,
+            },
+            allow_val_change=True,
         )
     
     # Setup trainer
@@ -188,6 +222,23 @@ def train(
             if use_wandb:
                 wandb.run.summary["best_val_loss"] = best_val_loss
                 wandb.run.summary["best_epoch"] = epoch
+                
+                # Log best model as W&B artifact
+                log_model_artifact(
+                    str(checkpoint_path),
+                    artifact_name="invae_model",
+                    model_config=asdict(model_cfg),
+                    metrics={
+                        "val_loss": float(best_val_loss),
+                        "epoch": epoch,
+                        "train_loss": train_metrics["loss"],
+                        "val_recon_loss": val_metrics["recon"],
+                        "val_kl_i": val_metrics["kl_i"],
+                        "val_kl_s": val_metrics["kl_s"],
+                    },
+                    description=f"Best model at epoch {epoch} with val_loss={best_val_loss:.2f}",
+                    aliases=["best", "latest"],
+                )
         
         # Periodic checkpoint
         if epoch % train_cfg.save_every == 0:
@@ -202,6 +253,20 @@ def train(
                 },
                 checkpoint_path,
             )
+            
+            # Log periodic checkpoint as W&B artifact (only every artifact_save_every epochs)
+            if use_wandb and epoch % train_cfg.artifact_save_every == 0:
+                log_model_artifact(
+                    str(checkpoint_path),
+                    artifact_name="invae_model_checkpoints",
+                    model_config=asdict(model_cfg),
+                    metrics={
+                        "val_loss": float(val_metrics["loss"]),
+                        "epoch": epoch,
+                    },
+                    description=f"Checkpoint at epoch {epoch}",
+                    aliases=[f"epoch_{epoch}"],
+                )
     
     print("\n" + "=" * 80)
     print(f"Training complete! Best validation loss: {best_val_loss:.2f}")
@@ -245,12 +310,12 @@ def main(
     data_cfg = load_data_config(yaml_path=data_config_path)
     train_cfg = load_train_config(yaml_path=train_config_path)
     
-    print(f"\nData Config:")
+    print("\nData Config:")
     print(f"  Data path: {data_cfg.data_path}")
     print(f"  HVGs: {data_cfg.n_top_genes}")
     print(f"  Val size: {data_cfg.val_size}")
     
-    print(f"\nTraining Config:")
+    print("\nTraining Config:")
     print(f"  Epochs: {train_cfg.n_epochs}")
     print(f"  Batch size: {train_cfg.batch_size}")
     print(f"  Learning rate: {train_cfg.learning_rate}")

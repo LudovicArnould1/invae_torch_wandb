@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import scanpy as sc
 from homework_scientalab.data import DataConfig, load_and_preprocess_data, stratified_train_val_split
 
 

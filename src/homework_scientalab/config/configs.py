@@ -97,6 +97,10 @@ class TrainConfig:
     # Loss
     lambda_indep: float = 0.1
     
+    # Reproducibility
+    seed: int = 42
+    deterministic: bool = True
+    
     # Warmup schedule (embedded)
     warmup_schedule: WarmupSchedule = field(default_factory=lambda: WarmupSchedule(
         beta_start=0.4,
@@ -116,4 +120,5 @@ class TrainConfig:
     project: str = "invae-pancreas"
     entity: Optional[str] = None
     run_name: Optional[str] = None
+    artifact_save_every: int = 50  # Save model artifacts to W&B every N epochs
 
