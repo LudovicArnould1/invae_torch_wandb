@@ -1,0 +1,43 @@
+# W&B Sweep Configuration for inVAE Hyperparameter Optimization
+# Search strategy: Random search over core hyperparameters
+
+program: sweep_train.py
+method: random
+metric:
+  name: val/loss
+  goal: minimize
+
+parameters:
+  # Latent dimensions
+  z_i_dim:
+    values: [10, 20, 30, 40, 50]
+  
+  z_s_dim:
+    values: [3, 5, 7, 10]
+  
+  # Learning rate (log-uniform distribution)
+  learning_rate:
+    distribution: log_uniform_values
+    min: 0.0001  # 1e-4
+    max: 0.01    # 1e-2
+  
+  # Independence penalty weight
+  lambda_indep:
+    distribution: log_uniform_values
+    min: 0.01
+    max: 1.0
+  
+  # Warmup steps
+  warmup_steps:
+    values: [100, 250, 500, 1000]
+
+# Early stopping configuration (optional - disabled for testing)
+early_terminate:
+  type: hyperband
+  min_iter: 10
+  eta: 2
+  s: 2
+
+# Fixed parameters (not swept)
+# These will be loaded from train_config.yaml by default
+

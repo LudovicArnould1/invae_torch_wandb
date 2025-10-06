@@ -45,4 +45,3 @@ project: "invae-pancreas"
 entity: null  # your W&B username or team
 run_name: null  # optional custom run name
 artifact_save_every: 50  # save model artifacts to W&B every N epochs
-
