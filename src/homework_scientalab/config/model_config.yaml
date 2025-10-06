@@ -1,0 +1,24 @@
+# Model Architecture Configuration for inVAE
+# This file contains parameters for the inVAE model architecture
+
+# Input dimensions (set dynamically from data, but can be overridden)
+# x_dim: 4000  # number of genes
+# b_dim: 14    # number of cell types
+# t_dim: 2     # number of batches
+
+# Latent space dimensions
+z_i_dim: 30  # biological latent dimension
+z_s_dim: 5   # technical/spurious latent dimension
+
+# Network architectures (hidden layer sizes)
+enc_hidden: [128, 128]  # encoder hidden layers
+dec_hidden: [128, 128]  # decoder hidden layers
+prior_hidden: [128, 128]  # prior network hidden layers
+
+# Regularization
+dropout: 0.1
+batchnorm: true
+
+# Decoder options
+use_library_size: true  # whether to use library size normalization
+

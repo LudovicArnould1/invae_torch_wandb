@@ -1,0 +1,43 @@
+# Training Configuration for inVAE
+# This file contains training hyperparameters and settings
+
+# Model architecture (duplicates model_config for convenience in single config training)
+z_i_dim: 30
+z_s_dim: 5
+enc_hidden: [128, 128]
+dec_hidden: [128, 128]
+prior_hidden: [128, 128]
+dropout: 0.1
+batchnorm: true
+use_library_size: true
+
+# Training hyperparameters
+n_epochs: 500
+batch_size: 256
+learning_rate: 0.001  # 1e-3
+weight_decay: 0.000001  # 1e-6
+grad_clip: 1.0
+amp: true  # automatic mixed precision
+
+# Loss configuration
+lambda_indep: 0.1  # independence penalty weight
+
+# Beta warmup schedule
+warmup_schedule:
+  beta_start: 0.4
+  beta_end: 1.0
+  warmup_steps: 250
+
+# Data loading
+num_workers: 4
+pin_memory: true
+
+# Checkpointing
+save_dir: "checkpoints"
+save_every: 50
+
+# Weights & Biases configuration
+project: "invae-pancreas"
+entity: null  # your W&B username or team
+run_name: null  # optional custom run name
+

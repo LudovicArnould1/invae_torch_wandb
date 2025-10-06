@@ -1,0 +1,21 @@
+AnnData Summary
+- path: /mnt/user_disk/larnould/scientalab/data/pancreas.h5ad
+- backed: r
+- shape: 14693 x 2448
+- X: Dataset
+- obs.columns: celltype, sample, n_genes, batch, n_counts, louvain
+- var.columns: n_cells-0, n_cells-1, n_cells-2, n_cells-3
+- layers: -
+- obsm: X_pca, X_umap
+- varm: PCs
+- uns: celltype_colors, louvain, neighbors, pca, sample_colors
+- obs dtypes: celltype:category, sample:category, n_genes:int64, batch:category, n_counts:float32, louvain:category
+- var dtypes: n_cells-0:float64, n_cells-1:float64, n_cells-2:float64, n_cells-3:float64
+- obs categoricals:
+  * celltype: 24 levels [MHC class II, PSC, acinar, activated_stellate, alpha, beta, co-expression, delta, ... (total=24)]
+  * sample: 4 levels [Baron, Muraro, Segerstolpe, Wang]
+  * batch: 4 levels [0, 1, 2, 3]
+  * louvain: 23 levels [0, 1, 2, 3, 4, 5, 6, 7, ... (total=23)]
+- approx size: >= 137.21 MiB (X only)
+
+Tip: use --backed r for large files to reduce memory usage.

@@ -1,0 +1,30 @@
+# Data Configuration for inVAE Training
+# This file contains parameters for data loading and preprocessing
+
+# Data source
+data_path: "data/pancreas.h5ad"
+backup_url: "https://www.dropbox.com/s/qj1jlm9w10wmt0u/pancreas.h5ad?dl=1"
+
+# Quality control filtering
+min_genes: 200
+min_cells: 10
+max_mito_pct: null  # e.g., 0.2 to filter cells with >20% mitochondrial content
+min_cell_counts: 100
+max_cell_counts: 15000
+
+# Feature selection
+n_top_genes: 4000
+
+# Covariate keys in AnnData.obs
+batch_key: "batch"
+celltype_key: "celltype"
+
+# Train/validation split
+val_size: 0.2
+random_state: 42
+
+# Normalization and size factors
+normalization_target_sum: 10000.0
+clip_size_factor_percentile: 99.5
+size_factor_min_clip: 1.0
+
