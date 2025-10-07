@@ -2,7 +2,7 @@
 
 Implementation of the **inVAE** (interpretable Variational Autoencoder) model for single-cell RNA-seq data analysis. This project provides a complete pipeline for training, evaluation, and hyperparameter optimization with W&B integration.
 
- I believe that I have successfully implemented a minimal but working pipeline, as shown in `example_notebook.ipynb`. The separation/mixing effects a not stunningly good, but they exist and could be improved by training longer (only did up to 500 epochs also due to time and hardware constraints) and looking for better hyperparameters (did not have time to run a proper search).
+ I believe that I have successfully implemented a minimal but working pipeline, as shown in `example_notebook.ipynb`. The separation/mixing effects a not stunningly good, but they exist and could be improved by training longer (only trained up to 500 epochs also due to time and hardware constraints) and looking for better hyperparameters (did not have time to run a proper search).
 
 ## DISCLAIMER
 
@@ -154,10 +154,10 @@ python -m homework_scientalab.sweep.run_sweep
 
 This is an illustrative implementation. Some features are simplified or omitted when they would duplicate similar functionality already demonstrated elsewhere in the codebase.
 
-**Priority improvements for version 0.2.0:**
+**Potential improvements**
 
 1. **Evaluation Process**
-   - Currently minimal with basic visualizations only
+   - Currently minimal with basic visualizations and metrics only
    - Add proper test set (similar to validation set)
    - Implement additional metrics and visualizations from the paper
    - Add comprehensive benchmarking of different runs and models
@@ -165,7 +165,7 @@ This is an illustrative implementation. Some features are simplified or omitted 
 2. **Data Preprocessing**
    - Improve data cleaning and normalization strategies
    - Fix gene count filters (current thresholds don't filter anything in practice)
-   - Address stratified train/val split issues with rare cell types
+   - Address stratified train/val split issues with rare cell types/samples
    - Handle classes with too few samples more robustly
 
 3. **Infrastructure & Scalability**
@@ -181,5 +181,8 @@ This is an illustrative implementation. Some features are simplified or omitted 
    - Automation
 
 5. **Reporting and high level analysis/comparisons**
+
+Also we could refactor the code to make it really modular (data processing | train | evaluation), add a CI, ...
+
 
 Each improvement should be divided into issues, linked to PR and milestones. The most crucial ones should be linked to version 0.2.0 if the current one is 0.1.0.
