@@ -183,6 +183,3 @@ This is an illustrative implementation. Some features are simplified or omitted 
 5. **Reporting and high level analysis/comparisons**
 
 Also we could refactor the code to make it really modular (data processing | train | evaluation), add a CI, ...
-
-
-Each improvement should be divided into issues, linked to PR and milestones. The most crucial ones should be linked to version 0.2.0 if the current one is 0.1.0.
